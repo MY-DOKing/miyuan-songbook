@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>米渊的点歌台 · 金色矢车菊花神</title>
+    <style>
+        /* ================= 色卡定义 ================= */
+        :root {
+            --color-abc3ae: #abc3ae; /* 浅绿 */
+            --color-ffd465: #ffd465; /* 亮黄 - 主花 */
+            --color-ff9d35: #ff9d35; /* 橘黄 - 副花 */
+            --color-ffc98d: #ffc98d; /* 浅橘 */
+            --color-fff0c9: #fff0c9; /* 米黄 - 背景 */
+            --color-dark-green: #0e4d32; /* 深绿 - 文字/花心 */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Microsoft YaHei', sans-serif;
+        }
+
+        /* ================= 背景与小花朵暗纹 ================= */
+        body {
+            background-color: var(--color-fff0c9);
+            background-image: url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffd465' fill-opacity='0.25'%3E%3Cpath d='M20 20 Q25 10 30 20 Q40 15 35 25 Q45 30 35 35 Q40 45 30 40 Q25 50 20 40 Q10 45 15 35 Q5 30 15 25 Q10 15 20 20 Z'/%3E%3Cpath d='M80 80 Q85 70 90 80 Q100 75 95 85 Q105 90 95 95 Q100 105 90 100 Q85 110 80 100 Q70 105 75 95 Q65 90 75 85 Q70 75 80 80 Z' fill='%23ff9d35'/%3E%3C/g%3E%3C/svg%3E");
+            background-size: 150px 150px;
+            color: var(--color-dark-green);
+            overflow-x: hidden;
+        }
+
+        /* ================= 1. 加载界面 ================= */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: var(--color-abc3ae);
+            background-image: radial-gradient(var(--color-dark-green) 2px, transparent 2px);
+            background-size: 30px 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading-text {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--color-fff0c9);
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+            text-shadow: 1px 1px 0 var(--color-dark-green);
+        }
+
+        .loading-bar-container {
+            width: 300px;
+            height: 20px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid var(--color-dark-green);
+        }
+
+        .loading-bar {
+            width: 0%;
+            height: 100%;
+            background-color: var(--color-ffd465);
+            transition: width 0.1s linear;
+        }
+
+        /* ================= 2. 密码输入界面（一键版） ================= */
+        #password-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            /* 暗号页背景：白色波点，菱形交错排布 */
+            background-color: var(--color-abc3ae);
+            background-image: radial-gradient(#ffffff 8%, transparent 8%), radial-gradient(#ffffff 8%, transparent 8%);
+            background-size: 60px 60px; /* 大网格间距 */
+            background-position: 0 0, 30px 30px; /* 第二层偏移一半，形成菱形交错 */
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9998;
+        }
+
+        .password-box {
+            background-color: var(--color-fff0c9);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 90%;
+            border: 4px solid var(--color-ff9d35);
+            position: relative;
+        }
+
+        .flower-decor::before {
+            content: '';
+            position: absolute;
+            top: -40px;
+            left: -40px;
+            width: 100px;
+            height: 100px;
+            background-image: url('flower.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .password-prompt {
+            font-size: 20px;
+            margin-bottom: 25px;
+            font-weight: bold;
+            line-height: 1.6;
+        }
+
+        .password-prompt span {
+            color: var(--color-ff9d35);
+            font-size: 24px;
+            display: block;
+            margin-top: 5px;
+        }
+
+        /* 一键爱上米渊按钮 */
+        .one-click-btn {
+            background-color: var(--color-ffd465);
+            color: var(--color-dark-green);
+            border: 3px solid var(--color-ff9d35);
+            padding: 15px 40px;
+            font-size: 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 0 var(--color-ff9d35);
+        }
+
+        .one-click-btn:hover {
+            background-color: #fff0c9;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 var(--color-ff9d35);
+        }
+
+        .one-click-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 var(--color-ff9d35);
+        }
+
+        /* ================= 3. 主界面 ================= */
+        #main-content {
+            display: none;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding-bottom: 80px; 
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 30px 20px;
+            background-color: var(--color-abc3ae);
+            border-radius: 20px;
+            border: 4px solid var(--color-fff0c9);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        header h1 {
+            color: var(--color-dark-green);
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            color: var(--color-dark-green);
+            font-size: 16px;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .search-wrapper {
+            position: relative;
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 12px 45px 12px 20px;
+            border: 2px solid var(--color-abc3ae);
+            border-radius: 30px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .search-box:focus {
+            border-color: var(--color-ff9d35);
+        }
+
+        .clear-search-btn {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: var(--color-ff9d35);
+            cursor: pointer;
+            display: none;
+            padding: 0 5px;
+            line-height: 1;
+        }
+
+        .clear-search-btn:hover {
+            color: var(--color-dark-green);
+        }
+
+        /* 歌曲列表网格 */
+        .song-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 18px;
+        }
+
+        .song-card {
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 15px;
+            border-left: 6px solid var(--color-ffd465);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; 
+            height: 100%;
+            /* 去掉 min-height，让高度根据内容自适应，减少底部大片留白 */
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+
+        .song-card::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: -15px;
+            width: 45px;
+            height: 45px;
+            background-image: url('flower.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            opacity: 0.9;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .song-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-left-color: var(--color-ff9d35);
+        }
+
+        /* 卡片文字区域 */
+        .song-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 8px; /* 恢复一个舒服的间距 */
+            word-break: break-all;
+            padding-left: 25px;
+            line-height: 1.4;
+        }
+
+        .song-status {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 15px; /* 状态栏底部留点空间给按钮 */
+            padding-left: 25px;
+            line-height: 1.4;
+        }
+
+        .card-btn {
+            background-color: var(--color-abc3ae);
+            color: var(--color-dark-green);
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+            width: 100%;
+            font-size: 14px;
+            margin-top: auto; /* 按钮依然在底部，但卡片整体不高，所以不显得空 */
+        }
+
+        .card-btn:hover {
+            background-color: var(--color-ffd465);
+        }
+
+        /* 投稿区域 */
+        .submit-section {
+            margin-top: 40px;
+            background-color: var(--color-ffc98d);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            border: 4px dashed var(--color-ff9d35);
+            position: relative;
+        }
+
+        .submit-section::before {
+            content: '';
+            position: absolute;
+            top: -45px;
+            left: -45px;
+            width: 120px;
+            height: 120px;
+            background-image: url('flower.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .submit-section h2 {
+            margin-bottom: 15px;
+            font-size: 22px;
+            padding-left: 25px;
+        }
+
+        .submit-form {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .submit-form input {
+            padding: 12px 20px;
+            border-radius: 30px;
+            border: 2px solid var(--color-ff9d35);
+            font-size: 16px;
+            outline: none;
+            width: 300px;
+        }
+
+        /* 投稿成功的轻提示（Toast） */
+        .toast-msg {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background-color: var(--color-dark-green);
+            color: var(--color-fff0c9);
+            padding: 12px 25px;
+            border-radius: 30px;
+            font-size: 15px;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            opacity: 0;
+            transition: all 0.4s ease;
+            z-index: 10000;
+            pointer-events: none;
+        }
+
+        .toast-msg.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .submitted-list {
+            margin-top: 20px;
+            text-align: left;
+            max-height: 150px;
+            overflow-y: auto;
+            background: rgba(255,255,255,0.5);
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+
+        .submitted-list p {
+            padding: 5px;
+            border-bottom: 1px dashed #ccc;
+        }
+
+        /* ================= 4. 底部版权信息 ================= */
+        .footer-copyright {
+            text-align: center;
+            padding: 25px 0 15px 0;
+            font-size: 14px;
+            color: var(--color-dark-green);
+            opacity: 0.7;
+            letter-spacing: 1px;
+        }
+
+        /* ================= 5. 自定义点歌弹窗 ================= */
+        .custom-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+            z-index: 10001;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .custom-modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: var(--color-fff0c9);
+            padding: 35px 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 90%;
+            width: 400px;
+            border: 4px solid var(--color-ff9d35);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            position: relative;
+            animation: popIn 0.3s ease-out;
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-content::before {
+            content: '';
+            position: absolute;
+            top: -30px;
+            left: -30px;
+            width: 80px;
+            height: 80px;
+            background-image: url('flower.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            pointer-events: none;
+        }
+
+        .modal-icon {
+            font-size: 40px;
+            margin-bottom: 15px;
+        }
+
+        .modal-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--color-dark-green);
+            margin-bottom: 10px;
+        }
+
+        .modal-song-name {
+            font-size: 18px;
+            color: var(--color-ff9d35);
+            font-weight: bold;
+            margin-bottom: 25px;
+            word-break: break-all;
+        }
+
+        .modal-btn {
+            background-color: var(--color-abc3ae);
+            color: var(--color-dark-green);
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .modal-btn:hover {
+            background-color: var(--color-ffd465);
+        }
+
+        /* ================= 6. 全新的投稿提交按钮样式 ================= */
+        .submit-btn-new {
+            background-color: var(--color-abc3ae);
+            color: var(--color-dark-green);
+            border: 3px solid var(--color-dark-green);
+            padding: 12px 35px;
+            font-size: 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 0 var(--color-dark-green);
+        }
+
+        .submit-btn-new:hover {
+            background-color: var(--color-ffd465);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 var(--color-dark-green);
+        }
+
+        .submit-btn-new:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 var(--color-dark-green);
+        }
+
+        /* 针对小屏幕手机优化 */
+        @media (max-width: 600px) {
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .search-wrapper {
+                width: 100%;
+            }
+            .submit-form {
+                flex-direction: column;
+                align-items: center;
+            }
+            .submit-form input {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. 加载屏幕 -->
+    <div id="loading-screen">
+        <div class="loading-text">Loading...</div>
+        <div class="loading-bar-container">
+            <div class="loading-bar" id="loading-bar"></div>
+        </div>
+    </div>
+
+    <!-- 2. 一键暗号屏幕 -->
+    <div id="password-screen">
+        <div class="password-box flower-decor">
+            <div class="password-prompt" id="password-prompt">今日暗号是：<span>...</span></div>
+            <button class="one-click-btn" id="one-click-btn">💛 一键爱上米渊</button>
+        </div>
+    </div>
+
+    <!-- 3. 主界面 -->
+    <div id="main-content">
+        <header class="flower-decor">
+            <h1>🎤 米渊的点歌台 🎤</h1>
+            <p>点击卡片点歌，或者向下划提交你想听的歌！</p>
+        </header>
+
+        <div class="toolbar">
+            <div class="search-wrapper">
+                <input type="text" class="search-box" id="search-input" placeholder="🔍 搜索歌曲名...">
+                <button class="clear-search-btn" id="clear-search-btn">✕</button>
+            </div>
+            <span id="song-count" style="font-weight:bold; color: var(--color-dark-green);">共 88 首</span>
+        </div>
+
+        <div class="song-grid" id="song-list">
+            <!-- 歌曲通过 JS 生成 -->
+        </div>
+
+        <div class="submit-section flower-decor">
+            <h2>📝 我想听，但米渊没唱过的歌</h2>
+            <p style="margin-bottom:15px; font-size:14px;">粉丝无门槛提交区</p>
+            <div class="submit-form">
+                <input type="text" id="new-song-input" placeholder="输入你想听的歌曲名称...">
+                <button class="submit-btn-new" id="submit-new-song">提交</button>
+            </div>
+            <div class="submitted-list" id="submitted-list">
+                <p style="color:#888; text-align:center;">暂时还没有人提交哦~</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. 底部版权信息 -->
+    <div class="footer-copyright">©米渊Doking出品</div>
+
+    <!-- 5. 自定义点歌弹窗 -->
+    <div class="custom-modal" id="custom-modal">
+        <div class="modal-content">
+            <div class="modal-icon">🎵</div>
+            <div class="modal-title">点歌成功！</div>
+            <div class="modal-song-name" id="modal-song-name">《晴天》</div>
+            <button class="modal-btn" id="modal-close-btn">好的，米渊快去准备！</button>
+        </div>
+    </div>
+
+    <!-- 6. 全局轻提示（Toast） -->
+    <div class="toast-msg" id="toast-msg">✨ 提交成功！米渊看到后会考虑的！</div>
+
+    <script>
+        // ================= 数据准备 =================
+        const songList = [
+            "童话镇", "Always Online", "Diamonds", "Love Story", "爱我不丢下我", 
+            "Song of the Wind", "倒数", "巴拉莱卡", "至少还有你", "轻涟", 
+            "Young And Beautiful", "晴天", "最好的安排", "我的歌声里", "小尖尖", 
+            "句号", "虚拟", "匆匆那年", "天外来物", "怪咖", 
+            "保留", "凄美地", "野人 (女版)", "如果可以", "爱人错过", 
+            "你在，不在", "我用什么把你留住", "笼", "那些你很冒险的梦", "千年之恋 (Live)", 
+            "一个人的风景", "未至", "夏至未至", "信仰", "白羊", 
+            "第一天 (男版)", "飞云之下", "直到那一天", "三生三世", "凉凉", 
+            "繁花", "思慕", "修炼爱情", "稻香", "青花瓷", 
+            "传奇", "如愿", "动物世界", "最初的记忆", "隐形的翅膀", 
+            "Let It Go", "Monsters", "特别的人", "下潜", "阳光下的星星", 
+            "天下", "红昭愿", "红色高跟鞋", "红绣花", "南山南", 
+            "隔岸", "熄灭", "安和桥", "马", "我想念", 
+            "Take Me Hand", "慢慢喜欢你", "太聪明", "唯一", "蒲公英的约定", 
+            "其实", "愿与愁", "黑夜问白天", "贝加尔湖畔", "失眠", 
+            "下雨了", "恋人", "交换余生", "像风一样", "遇见", 
+            "天外来物", "最后一页", "夏天的风", "说散就散", "新地球", 
+            "光年之外", "泡沫", "主播随便唱！！！"
+        ];
+
+        const loadingScreen = document.getElementById('loading-screen');
+        const loadingBar = document.getElementById('loading-bar');
+        const passwordScreen = document.getElementById('password-screen');
+        const mainContent = document.getElementById('main-content');
+        const promptSpan = document.querySelector('#password-prompt span');
+        const oneClickBtn = document.getElementById('one-click-btn');
+
+        const passphrases = [
+            "我自愿加入米渊教团",
+            "米渊我爱你",
+            "人美声甜的米渊",
+            "我要让所有人关注米渊",
+            "全世界唱歌最好听的米渊"
+        ];
+
+        let currentPassphrase = "";
+
+        // 加载进度
+        let progress = 0;
+        const loadInterval = setInterval(() => {
+            progress += Math.random() * 15;
+            if (progress >= 100) {
+                progress = 100;
+                clearInterval(loadInterval);
+                setTimeout(() => {
+                    loadingScreen.style.opacity = '0';
+                    setTimeout(() => {
+                        loadingScreen.style.display = 'none';
+                        showPasswordScreen();
+                    }, 500);
+                }, 300);
+            }
+            loadingBar.style.width = progress + '%';
+        }, 150);
+
+        function showPasswordScreen() {
+            currentPassphrase = passphrases[Math.floor(Math.random() * passphrases.length)];
+            promptSpan.textContent = currentPassphrase;
+            passwordScreen.style.display = 'flex';
+        }
+
+        // 一键确认暗号
+        oneClickBtn.addEventListener('click', () => {
+            passwordScreen.style.display = 'none';
+            mainContent.style.display = 'block';
+            renderSongs(songList);
+            loadSubmittedSongs();
+        });
+
+        // ================= 主界面逻辑 =================
+        const songGrid = document.getElementById('song-list');
+        const searchInput = document.getElementById('search-input');
+        const clearSearchBtn = document.getElementById('clear-search-btn');
+        const songCountSpan = document.getElementById('song-count');
+
+        // 自定义弹窗元素
+        const customModal = document.getElementById('custom-modal');
+        const modalSongName = document.getElementById('modal-song-name');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        // 全局轻提示元素
+        const toastMsg = document.getElementById('toast-msg');
+
+        function showToast(msg) {
+            toastMsg.textContent = msg;
+            toastMsg.classList.add('show');
+            setTimeout(() => {
+                toastMsg.classList.remove('show');
+            }, 3000);
+        }
+
+        function renderSongs(songs) {
+            songGrid.innerHTML = '';
+            songCountSpan.textContent = `共 ${songs.length} 首`;
+            
+            if (songs.length === 0) {
+                songGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 20px; color: #888;">没有找到匹配的歌曲哦~</p>';
+                return;
+            }
+
+            songs.forEach((song, index) => {
+                const card = document.createElement('div');
+                card.className = 'song-card';
+                
+                const isSpecial = song.includes("随便唱");
+                
+                card.innerHTML = `
+                    <div class="song-name">${index + 1}. ${song}</div>
+                    <div class="song-status">${isSpecial ? '🎲 惊喜盲盒' : '🎵 已收入曲库'}</div>
+                    <button class="card-btn" data-song="${song}">点这首</button>
+                `;
+                songGrid.appendChild(card);
+            });
+
+            document.querySelectorAll('.card-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const songName = e.target.getAttribute('data-song');
+                    modalSongName.textContent = `《${songName}》`;
+                    customModal.classList.add('show');
+                });
+            });
+        }
+
+        // 关闭自定义弹窗
+        modalCloseBtn.addEventListener('click', () => {
+            customModal.classList.remove('show');
+        });
+        customModal.addEventListener('click', (e) => {
+            if (e.target === customModal) {
+                customModal.classList.remove('show');
+            }
+        });
+
+        // 搜索逻辑
+        searchInput.addEventListener('input', (e) => {
+            const keyword = e.target.value.toLowerCase().trim();
+            const filtered = songList.filter(song => song.toLowerCase().includes(keyword));
+            renderSongs(filtered);
+            
+            if (keyword.length > 0) {
+                clearSearchBtn.style.display = 'block';
+            } else {
+                clearSearchBtn.style.display = 'none';
+            }
+        });
+
+        // 清除搜索
+        clearSearchBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            clearSearchBtn.style.display = 'none';
+            renderSongs(songList);
+            searchInput.focus();
+        });
+
+        // ================= 粉丝投稿 =================
+        const newSongInput = document.getElementById('new-song-input');
+        const submitNewSongBtn = document.getElementById('submit-new-song');
+        const submittedListDiv = document.getElementById('submitted-list');
+
+        function loadSubmittedSongs() {
+            const saved = localStorage.getItem('miyuan_submitted_songs');
+            if (saved) {
+                const arr = JSON.parse(saved);
+                renderSubmittedList(arr);
+            } else {
+                submittedListDiv.innerHTML = '<p style="color:#888; text-align:center;">暂时还没有人提交哦~</p>';
+            }
+        }
+
+        function renderSubmittedList(arr) {
+            submittedListDiv.innerHTML = '';
+            if (arr.length === 0) {
+                submittedListDiv.innerHTML = '<p style="color:#888; text-align:center;">暂时还没有人提交哦~</p>';
+                return;
+            }
+            arr.slice().reverse().forEach((item) => {
+                const p = document.createElement('p');
+                p.textContent = `🎵 ${item}`;
+                submittedListDiv.appendChild(p);
+            });
+        }
+
+        submitNewSongBtn.addEventListener('click', () => {
+            const val = newSongInput.value.trim();
+            if (!val) return;
+
+            let saved = localStorage.getItem('miyuan_submitted_songs');
+            let arr = saved ? JSON.parse(saved) : [];
+            
+            if (!arr.includes(val)) {
+                arr.push(val);
+                localStorage.setItem('miyuan_submitted_songs', JSON.stringify(arr));
+                renderSubmittedList(arr);
+            }
+
+            newSongInput.value = '';
+            showToast('✨ 提交成功！米渊看到后会考虑的！');
+        });
+
+        newSongInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                submitNewSongBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>
